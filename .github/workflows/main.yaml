@@ -20,7 +20,7 @@ jobs:
       - name: Read version
         id: get_version
         run: |
-          VERSION=$(cat version.txt)
+          VERSION=$(cat src/version.txt)
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Build Docker Image
