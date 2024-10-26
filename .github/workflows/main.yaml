@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    name: Build Docker Image v${{ steps.get_version.outputs.VERSION }}
+    name: Build Docker Image
     runs-on: ubuntu-latest
 
     steps:
@@ -25,7 +25,7 @@ jobs:
 
       - name: Build Docker Image
         run: |
-          docker build -t myapp:${{ steps.get_version.outputs.VERSION }} .
+          docker build -t myapp:${{ needs.build.outputs.VERSION }} .
 
   test:
     name: Test Docker Image Health v${{ needs.build.outputs.VERSION }}
