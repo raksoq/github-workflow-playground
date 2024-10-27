@@ -20,13 +20,12 @@ jobs:
       - name: Read version
         id: get_version
         run: |
-          ls -a
           VERSION=$(cat src/version.txt)
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Build Docker Image
         run: |
-          docker build -t myapp:${{ needs.build.outputs.VERSION }} .
+          docker build -t fastapi:${{ steps.get_version.outputs.VERSION }} .
 
   test:
     name: Test Docker Image Health v${{ needs.build.outputs.VERSION }}
@@ -39,7 +38,7 @@ jobs:
 
       - name: Run Docker Container
         run: |
-          docker run -d -p 8080:80 --name myapp myapp:${{ needs.build.outputs.VERSION }}
+          docker run -d -p 8080:80 --name fastapi fastapi:${{ needs.build.outputs.VERSION }}
           sleep 10
 
       - name: Test Health Endpoint
@@ -48,8 +47,8 @@ jobs:
 
       - name: Stop Docker Container
         run: |
-          docker stop myapp
-          docker rm myapp
+          docker stop fastapi
+          docker rm fastapi
 
   security_scan:
     name: Trivy Security Scan v${{ needs.build.outputs.VERSION }}
@@ -60,18 +59,10 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Install Trivy
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y wget apt-transport-https gnupg lsb-release
-          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
-          echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
-          sudo apt-get update
-          sudo apt-get install -y trivy
-
       - name: Run Trivy Scan
-        run: |
-          trivy image myapp:${{ needs.build.outputs.VERSION }}
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: fastapi:${{ needs.build.outputs.VERSION }}
 
   push:
     name: Push Docker Image to DockerHub v${{ needs.build.outputs.VERSION }}
@@ -90,5 +81,5 @@ jobs:
 
       - name: Push Docker Image
         run: |
-          docker tag myapp:${{ needs.build.outputs.VERSION }} ${{ secrets.DOCKER_USERNAME }}/myapp:${{ needs.build.outputs.VERSION }}
-          docker push ${{ secrets.DOCKER_USERNAME }}/myapp:${{ needs.build.outputs.VERSION }}
+          docker tag fastapi:${{ needs.build.outputs.VERSION }} ${{ secrets.DOCKER_USERNAME }}/fastapi:${{ needs.build.outputs.VERSION }}
+          docker push ${{ secrets.DOCKER_USERNAME }}/fastapi:${{ needs.build.outputs.VERSION }}
