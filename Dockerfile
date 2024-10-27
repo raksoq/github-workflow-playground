@@ -3,10 +3,8 @@ FROM python:3.10-slim AS build
 WORKDIR /app
 
 COPY src/ /app/src
-COPY version.txt /app/
-COPY requirements.txt /app/
 
-RUN pip install -r src/requirements.txt
+RUN pip install -r requirements.txt
 
 # Stage 2: Run
 FROM python:3.10-slim
