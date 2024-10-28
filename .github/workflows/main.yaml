@@ -107,7 +107,8 @@ jobs:
         - name: Run Anchore Security Scan
           uses: anchore/scan-action@v3
           with:
-            image: user/app:latest
+            image:  ${{ vars.DOCKER_USERNAME }}/fastapi:${{ needs.build.outputs.VERSION }}
+            format: sarif
             output-format: sarif
             fail-build: true
 
