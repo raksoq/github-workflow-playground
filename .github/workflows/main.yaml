@@ -121,11 +121,16 @@ jobs:
         #     image: ${{ vars.DOCKER_USERNAME }}/fastapi:${{ needs.build.outputs.VERSION }}
             
         - name: Run Clair Scan
-          run: |
-            docker run -d --name clair --network host https://github.com/quay/clair
-            sleep 10
-            docker run --rm --network host -v /var/run/docker.sock:/var/run/docker.sock arminc/clair-scanner:latest ${{ vars.DOCKER_USERNAME }}/fastapi:${{ needs.build.outputs.VERSION }}
+          uses: quay/clair-action@main
+          with:
+           image-path: myapp_${{ github.sha }}.tar
+           format: sarif
+           output: clair_results.sarif
 
+        - name: Upload SARIF Results
+          uses: github/codeql-action/upload-sarif@v2
+          with:
+           sarif_file: clair_results.sarif
 
   push:
     name: Push Docker Image to DockerHub v${{ needs.build.outputs.VERSION }}
