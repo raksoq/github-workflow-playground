@@ -20,6 +20,7 @@ jobs:
       - name: Read version
         id: get_version
         run: |
+          ls -a
           VERSION=$(cat src/version.txt)
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
