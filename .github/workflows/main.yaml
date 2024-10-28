@@ -94,9 +94,14 @@ jobs:
       - name: Load Docker Image
         run: docker load -i fastapi_image.tar
 
-      - name: Run Trivy Scan
-        uses: aquasecurity/trivy-action@master
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@0.28.0
         with:
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
           image-ref: ${{ vars.DOCKER_USERNAME }}/fastapi:${{ needs.build.outputs.VERSION }}
 
   push:
