@@ -94,38 +94,18 @@ jobs:
         - name: Load Docker Image
           run: docker load -i fastapi_image.tar
 
-        # # Cache Trivy vulnerability database
-        # - name: Cache Trivy DB
-        #   uses: actions/cache@v3
-        #   with:
-        #     path: ~/.cache/trivy/db
-        #     key: ${{ runner.os }}-trivy-db-cache
-
-        # - name: Run Trivy Vulnerability Scanner
-        #   uses: aquasecurity/trivy-action@0.28.0
-        #   with:
-        #     format: 'table'
-        #     exit-code: '1'
-        #     ignore-unfixed: true
-        #     vuln-type: 'os,library'
-        #     severity: 'CRITICAL,HIGH'
-        #     image-ref: ${{ vars.DOCKER_USERNAME }}/fastapi:${{ needs.build.outputs.VERSION }}
-        #   env:
-        #     # Specify cache directory and skip DB updates if the cache is hit
-        #     TRIVY_CACHE_DIR: ~/.cache/trivy
-        #     # args: "--skip-db-update"
-
-        # - name: Scan Image with Grype
-        #   uses: anchore/grype-action@v1
-        #   with:
-        #     image: ${{ vars.DOCKER_USERNAME }}/fastapi:${{ needs.build.outputs.VERSION }}
-            
         - name: Run Clair Scan
           uses: quay/clair-action@main
           with:
-           image-path: image: ${{ vars.DOCKER_USERNAME }}/fastapi:${{ needs.build.outputs.VERSION }}
+           image-path: ${{ vars.DOCKER_USERNAME }}/fastapi:${{ needs.build.outputs.VERSION }}
            format: sarif
            output: clair_results.sarif
+
+        - name: Scan for vulnerabilities
+          uses: crazy-max/ghaction-container-scan@v3
+          with:
+            image: user/app:latest
+            severity_threshold: HIGH
 
         - name: Upload SARIF Results
           uses: github/codeql-action/upload-sarif@v2
