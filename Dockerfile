@@ -9,8 +9,6 @@ COPY src/ /app/
 # Install dependencies
 RUN pip install --upgrade pip && pip install -r /app/requirements.txt
 
-
-
 # Stage 2: Run
 FROM python:3.10-slim
 
@@ -29,4 +27,4 @@ USER appuser
 EXPOSE 80
 
 # Start the application
-CMD ["python", "main.py"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80"]
