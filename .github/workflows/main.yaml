@@ -94,13 +94,6 @@ jobs:
         - name: Load Docker Image
           run: docker load -i fastapi_image.tar
 
-        - name: Run Clair Scan
-          uses: quay/clair-action@main
-          with:
-           image-path: ${{ vars.DOCKER_USERNAME }}/fastapi:${{ needs.build.outputs.VERSION }}
-           format: sarif
-           output: clair_results.sarif
-
         - name: Scan for vulnerabilities
           uses: crazy-max/ghaction-container-scan@v3
           with:
