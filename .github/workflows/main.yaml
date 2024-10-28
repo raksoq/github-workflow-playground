@@ -75,35 +75,93 @@ jobs:
           docker stop fastapi
           docker rm fastapi
 
-  security_scan:
-    name: Security Scan v${{ needs.build.outputs.VERSION }}
-    runs-on: ubuntu-latest
-    needs: test
-    if: ${{ success() }}
+  
+security_scan:
+  name: Security Scan v${{ needs.build.outputs.VERSION }}
+  runs-on: ubuntu-latest
+  needs: test
+  if: ${{ success() }}
 
-    steps:
-        - name: Download Docker Image Artifact
-          uses: actions/download-artifact@v4
-          with:
-            name: fastapi_image
-            path: .
+  steps:
+    - name: Download Docker Image Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: fastapi_image
+        path: .
 
-        - name: Unpack Docker Image
-          run: gunzip fastapi_image.tar.gz
+    - name: Unpack Docker Image
+      run: gunzip fastapi_image.tar.gz
 
-        - name: Load Docker Image
-          run: docker load -i fastapi_image.tar
+    - name: Load Docker Image
+      run: docker load -i fastapi_image.tar
 
-        - name: Scan for vulnerabilities
-          uses: crazy-max/ghaction-container-scan@v3
-          with:
-            image: user/app:latest
-            severity_threshold: HIGH
+    # Trivy Scan
+    - name: Run Trivy Security Scan
+      uses: aquasecurity/trivy-action@v0.4.3
+      with:
+        image-ref: user/app:latest
+        format: sarif
+        output: trivy_results.sarif
 
-        - name: Upload SARIF Results
-          uses: github/codeql-action/upload-sarif@v2
-          with:
-           sarif_file: clair_results.sarif
+    # Anchore Scan
+    - name: Run Anchore Security Scan
+      uses: anchore/scan-action@v3
+      with:
+        image: user/app:latest
+        output-format: sarif
+        fail-build: true
+
+    # Orca Security Scan
+    - name: Run Orca Security Scan
+      uses: orcasecurity/shiftleft-container-image-action@v1
+      with:
+        api_token: ${{ secrets.ORCA_SECURITY_API_TOKEN }}
+        image: user/app:latest
+        format: sarif
+        output: orca_results.sarif
+
+    # Prisma Cloud Scan
+    - name: Run Prisma Cloud Scan
+      uses: PaloAltoNetworks/prisma-cloud-scan@v1.6.7
+      with:
+        pcc_console_url: ${{ secrets.PCC_CONSOLE_URL }}
+        pcc_user: ${{ secrets.PCC_USER }}
+        pcc_pass: ${{ secrets.PCC_PASS }}
+        image_name: user/app:latest
+        sarif_file: prisma_results.sarif
+
+    # Docker Bench Security
+    - name: Clone Docker Bench Security
+      run: |
+        git clone https://github.com/docker/docker-bench-security.git
+        cd docker-bench-security
+        chmod +x docker-bench-security.sh
+
+    - name: Run Docker Bench Security
+      run: |
+        cd docker-bench-security
+        ./docker-bench-security.sh
+
+    # Upload SARIF Results
+    - name: Upload Trivy SARIF Results
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: trivy_results.sarif
+
+    - name: Upload Anchore SARIF Results
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: anchore_results.sarif
+
+    - name: Upload Orca SARIF Results
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: orca_results.sarif
+
+    - name: Upload Prisma SARIF Results
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: prisma_results.sarif
 
   push:
     name: Push Docker Image to DockerHub v${{ needs.build.outputs.VERSION }}
