@@ -13,6 +13,9 @@ jobs:
     name: Build Docker Image
     runs-on: ubuntu-latest
 
+    outputs:
+      VERSION: ${{ steps.get_version.outputs.VERSION }}
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -20,7 +23,6 @@ jobs:
       - name: Read version
         id: get_version
         run: |
-          ls -a
           VERSION=$(cat src/version.txt)
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
