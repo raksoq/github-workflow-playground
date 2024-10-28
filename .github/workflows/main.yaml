@@ -123,7 +123,7 @@ jobs:
         - name: Run Clair Scan
           uses: quay/clair-action@main
           with:
-           image-path: myapp_${{ github.sha }}.tar
+           image-path: image: ${{ vars.DOCKER_USERNAME }}/fastapi:${{ needs.build.outputs.VERSION }}
            format: sarif
            output: clair_results.sarif
 
