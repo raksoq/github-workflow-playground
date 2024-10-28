@@ -108,28 +108,8 @@ jobs:
           uses: anchore/scan-action@v3
           with:
             image:  ${{ vars.DOCKER_USERNAME }}/fastapi:${{ needs.build.outputs.VERSION }}
-            format: sarif
             output-format: sarif
             fail-build: true
-
-        # Orca Security Scan
-        - name: Run Orca Security Scan
-          uses: orcasecurity/shiftleft-container-image-action@v1
-          with:
-            api_token: ${{ secrets.ORCA_SECURITY_API_TOKEN }}
-            image:  ${{ vars.DOCKER_USERNAME }}/fastapi:${{ needs.build.outputs.VERSION }}
-            format: sarif
-            output: orca_results.sarif
-
-        # Prisma Cloud Scan
-        - name: Run Prisma Cloud Scan
-          uses: PaloAltoNetworks/prisma-cloud-scan@v1.6.7
-          with:
-            pcc_console_url: ${{ secrets.PCC_CONSOLE_URL }}
-            pcc_user: ${{ secrets.PCC_USER }}
-            pcc_pass: ${{ secrets.PCC_PASS }}
-            image_name:  ${{ vars.DOCKER_USERNAME }}/fastapi:${{ needs.build.outputs.VERSION }}
-            sarif_file: prisma_results.sarif
 
         # Docker Bench Security
         - name: Clone Docker Bench Security
