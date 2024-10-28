@@ -76,7 +76,7 @@ jobs:
           docker rm fastapi
 
   security_scan:
-    name: Trivy Security Scan v${{ needs.build.outputs.VERSION }}
+    name: Security Scan v${{ needs.build.outputs.VERSION }}
     runs-on: ubuntu-latest
     needs: test
     if: ${{ success() }}
@@ -115,10 +115,10 @@ jobs:
         #     TRIVY_CACHE_DIR: ~/.cache/trivy
         #     # args: "--skip-db-update"
 
-        - name: Scan Image with Grype
-          uses: anchore/grype-action@v1
-          with:
-            image: ${{ vars.DOCKER_USERNAME }}/fastapi:${{ needs.build.outputs.VERSION }}
+        # - name: Scan Image with Grype
+        #   uses: anchore/grype-action@v1
+        #   with:
+        #     image: ${{ vars.DOCKER_USERNAME }}/fastapi:${{ needs.build.outputs.VERSION }}
             
         - name: Run Clair Scan
           run: |
