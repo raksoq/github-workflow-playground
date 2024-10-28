@@ -82,27 +82,38 @@ jobs:
     if: ${{ success() }}
 
     steps:
-      - name: Download Docker Image Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: fastapi_image
-          path: .
+        - name: Download Docker Image Artifact
+          uses: actions/download-artifact@v4
+          with:
+            name: fastapi_image
+            path: .
 
-      - name: Unpack Docker Image
-        run: gunzip fastapi_image.tar.gz
+        - name: Unpack Docker Image
+          run: gunzip fastapi_image.tar.gz
 
-      - name: Load Docker Image
-        run: docker load -i fastapi_image.tar
+        - name: Load Docker Image
+          run: docker load -i fastapi_image.tar
 
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          format: 'table'
-          exit-code: '1'
-          ignore-unfixed: true
-          vuln-type: 'os,library'
-          severity: 'CRITICAL,HIGH'
-          image-ref: ${{ vars.DOCKER_USERNAME }}/fastapi:${{ needs.build.outputs.VERSION }}
+        # Cache Trivy vulnerability database
+        - name: Cache Trivy DB
+          uses: actions/cache@v3
+          with:
+            path: ~/.cache/trivy/db
+            key: ${{ runner.os }}-trivy-db-cache
+
+        - name: Run Trivy Vulnerability Scanner
+          uses: aquasecurity/trivy-action@0.28.0
+          with:
+            format: 'table'
+            exit-code: '1'
+            ignore-unfixed: true
+            vuln-type: 'os,library'
+            severity: 'CRITICAL,HIGH'
+            image-ref: ${{ vars.DOCKER_USERNAME }}/fastapi:${{ needs.build.outputs.VERSION }}
+          env:
+            # Specify cache directory and skip DB updates if the cache is hit
+            TRIVY_CACHE_DIR: ~/.cache/trivy
+            # args: "--skip-db-update"
 
   push:
     name: Push Docker Image to DockerHub v${{ needs.build.outputs.VERSION }}
