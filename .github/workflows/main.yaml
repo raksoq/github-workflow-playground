@@ -116,7 +116,7 @@ jobs:
           uses: orcasecurity/shiftleft-container-image-action@v1
           with:
             api_token: ${{ secrets.ORCA_SECURITY_API_TOKEN }}
-            image: user/app:latest
+            image:  ${{ vars.DOCKER_USERNAME }}/fastapi:${{ needs.build.outputs.VERSION }}
             format: sarif
             output: orca_results.sarif
 
@@ -127,7 +127,7 @@ jobs:
             pcc_console_url: ${{ secrets.PCC_CONSOLE_URL }}
             pcc_user: ${{ secrets.PCC_USER }}
             pcc_pass: ${{ secrets.PCC_PASS }}
-            image_name: user/app:latest
+            image_name:  ${{ vars.DOCKER_USERNAME }}/fastapi:${{ needs.build.outputs.VERSION }}
             sarif_file: prisma_results.sarif
 
         # Docker Bench Security
