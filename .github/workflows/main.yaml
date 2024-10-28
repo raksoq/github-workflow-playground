@@ -28,11 +28,20 @@ jobs:
 
       - name: Build Docker Image
         run: |
-          docker build -t ${{ env.DOCKER_USERNAME }}/fastapi:${{ steps.get_version.outputs.VERSION }} .
+          docker build -t ${{ vars.DOCKER_USERNAME }}/fastapi:${{ steps.get_version.outputs.VERSION }} .
 
-      - name: Publish Docker Image
+      - name: Save Docker Image as Artifact
         run: |
-          docker push ${{ env.DOCKER_USERNAME }}/fastapi:${{ steps.get_version.outputs.VERSION }}
+          docker save ${{ vars.DOCKER_USERNAME }}/fastapi:${{ steps.get_version.outputs.VERSION }} -o fastapi_image.tar
+        # Compress the image to save space
+      - name: Compress Docker Image
+        run: gzip fastapi_image.tar
+
+      - name: Upload Docker Image Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: fastapi_image
+          path: fastapi_image.tar.gz
 
   test:
     name: Test Docker Image Health v${{ needs.build.outputs.VERSION }}
@@ -40,19 +49,21 @@ jobs:
     needs: build
 
     steps:
-      - name: Log in to DockerHub
-        uses: docker/login-action@v2
+      - name: Download Docker Image Artifact
+        uses: actions/download-artifact@v3
         with:
-          username: ${{ env.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          name: fastapi_image
+          path: .
 
-      - name: Pull Docker Image
-        run: |
-          docker pull ${{ env.DOCKER_USERNAME }}/fastapi:${{ needs.build.outputs.VERSION }}
+      - name: Unpack Docker Image
+        run: gunzip fastapi_image.tar.gz
+
+      - name: Load Docker Image
+        run: docker load -i fastapi_image.tar
 
       - name: Run Docker Container
         run: |
-          docker run -d -p 8080:80 --name fastapi ${{ env.DOCKER_USERNAME }}/fastapi:${{ needs.build.outputs.VERSION }}
+          docker run -d -p 8080:80 --name fastapi ${{ vars.DOCKER_USERNAME }}/fastapi:${{ needs.build.outputs.VERSION }}
           sleep 10
 
       - name: Test Health Endpoint
@@ -71,16 +82,22 @@ jobs:
     if: ${{ success() }}
 
     steps:
-      - name: Log in to DockerHub
-        uses: docker/login-action@v2
+      - name: Download Docker Image Artifact
+        uses: actions/download-artifact@v3
         with:
-          username: ${{ env.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          name: fastapi_image
+          path: .
+
+      - name: Unpack Docker Image
+        run: gunzip fastapi_image.tar.gz
+
+      - name: Load Docker Image
+        run: docker load -i fastapi_image.tar
 
       - name: Run Trivy Scan
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.DOCKER_USERNAME }}/fastapi:${{ needs.build.outputs.VERSION }}
+          image-ref: ${{ vars.DOCKER_USERNAME }}/fastapi:${{ needs.build.outputs.VERSION }}
 
   push:
     name: Push Docker Image to DockerHub v${{ needs.build.outputs.VERSION }}
@@ -95,10 +112,10 @@ jobs:
       - name: Log in to DockerHub
         uses: docker/login-action@v2
         with:
-          username: ${{ env.DOCKER_USERNAME }}
+          username: ${{ vars.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Tag and Push Docker Image
         run: |
-          docker tag ${{ env.DOCKER_USERNAME }}/fastapi:${{ needs.build.outputs.VERSION }} ${{ env.DOCKER_USERNAME }}/fastapi:${{ needs.build.outputs.VERSION }}
-          docker push ${{ env.DOCKER_USERNAME }}/fastapi:${{ needs.build.outputs.VERSION }}
+          docker tag ${{ vars.DOCKER_USERNAME }}/fastapi:${{ needs.build.outputs.VERSION }} ${{ vars.DOCKER_USERNAME }}/fastapi:${{ needs.build.outputs.VERSION }}
+          docker push ${{ vars.DOCKER_USERNAME }}/fastapi:${{ needs.build.outputs.VERSION }}
